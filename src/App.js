@@ -1,13 +1,15 @@
 import React, {Fragment, useState, useEffect} from "react";
 import "./App.css";
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
 const SignDisplay = () => (
   <section>
-    <h1> Welcome to Signicat Express Signature </h1>
+    <h1>Welcome to Signicat Express Signature </h1>
     <div className="sign">
       <img src="./images/sign.png" alt="sign" />
-      <form action="/signature-session" method="POST">
-        <button type="submit">
+      <form action={BACKEND_URL + '/signature-session'} method="POST">
+        <button className="btn" type="submit">
           Sign document
         </button>
       </form>
@@ -21,12 +23,11 @@ const Message = ({message}) => (
       <Fragment>
         <h1>{message.text}</h1>
         <img src="./images/sign.png" alt="sign" />
-        <form action="/download" method="POST">
-          <input type="hidden" name="jwt" value={message.jwt}></input>
-          <button type="submit">
+        <div className="btn-wrapper">
+          <a className="btn" href={BACKEND_URL + '/download?jwt=' + message.jwt}>
             Download document
-          </button>
-        </form>
+          </a>
+        </div>
       </Fragment>
       : <p>The sign in process was aborted or has an error.</p>}
   </section>

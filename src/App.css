@@ -48,7 +48,7 @@ p {
 }
 h1,h2 {
   text-align: center;
-  
+
   color: var(--text-dark);
   margin:0;
 }
@@ -66,24 +66,33 @@ h2{
 form{
   display:flex;
   justify-content: center;
+}
+form,.btn-wrapper {
   margin-top: 2rem;
 }
-button {
-  display:flex;
-  justify-content: center;
-  align-items: center;
-  height: 36px;
+.btn {
   background: var(--secondary-color);
   color: rgb(255, 255, 255);
   font-size: 1.5rem;
   font-weight: 500;
-  padding: 1.8rem;
   border: 0;
   cursor: pointer;
   transition: all 0.2s ease;
   border-radius: 32px;
 }
-button:hover {
+button.btn {
+  display:flex;
+  justify-content: center;
+  align-items: center;
+  height: 36px;
+  padding: 1.8rem;
+}
+a.btn {
+  display: block;
+  padding: 0.8rem 1.8rem;
+  text-decoration: none;
+}
+button:hover,.btn:hover {
   filter: brightness(87%);
   border-radius: 0;
 }

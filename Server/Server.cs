@@ -63,15 +63,15 @@ namespace Server
         }
     }
 
-    [Route("signature-session")]
+    [Route("")]
     [ApiController]
-    public class AuthenticationApiController : Controller
+    public class SignController : Controller
     {
         private readonly ISignatureService _signatureService;
         private readonly IWebHostEnvironment _env;
         private readonly string _frontendAppUrl;
 
-        public AuthenticationApiController(
+        public SignController(
             ISignatureService signatureService,
             IConfiguration configuration,
             IWebHostEnvironment env)
@@ -81,7 +81,7 @@ namespace Server
             _env = env;
         }
 
-        [HttpPost]
+        [HttpPost("signature-session")]
         public async Task<ActionResult> Create()
         {
             // Get local file to be signed
@@ -173,63 +173,27 @@ namespace Server
             Response.Headers.Add("Location", res.Signers[0].Url);
             return new StatusCodeResult(303);
         }
-    }
-
-    // End-point for downloading document
-    [Route("download")]
-    [ApiController]
-    public class DownloadApiController : Controller
-    {
-        private readonly ISignatureService _signatureService;
-        private readonly IWebHostEnvironment _env;
-        private readonly string _frontendAppUrl;
-
-        public DownloadApiController(
-            ISignatureService signatureService, 
-            IConfiguration configuration,
-            IWebHostEnvironment env)
+        
+        [HttpGet("download")]
+        public async Task<ActionResult> Download([FromQuery] string jwt)
         {
-            _signatureService = signatureService;
-            _frontendAppUrl = configuration["FrontendAppUrl"];
-            _env = env;
-        }
-
-        [HttpPost]
-        public async Task<ActionResult> Download()
-        {
-            // Get JWT from frontend
-            var jwt = Request.Form["jwt"];
-
             // Extract DocumentID from JWT
             var documentId = GetDocumentIdFromJwt(jwt);
 
-            // Download signed file if PAdES is generated (usually takes 3-5 sec)
-            var status = await _signatureService.GetDocumentStatusAsync(documentId);
-            while (!status.CompletedPackages.Contains(FileFormat.Pades))
+            bool ready;
+            do
             {
-                // get updated status
-                status = await _signatureService.GetDocumentStatusAsync(documentId);
+                var status = await _signatureService.GetDocumentStatusAsync(documentId);
+                ready = status.CompletedPackages.Contains(FileFormat.Pades);
+                
+                if (!ready) await Task.Delay(1000);
 
-                // If PAdES is generated download file locally
-                if (status.CompletedPackages.Contains(FileFormat.Pades))
-                {
-                    // Fetch document and download it
-                    var stream = await _signatureService.GetFileAsync(documentId, FileFormat.Pades);
-                    
-                    await using var ms = new MemoryStream();
-                    await stream.CopyToAsync(ms);
-
-                    var filePath = Path.Combine(_env.ContentRootPath, "letter_of_intent_PAdES.pdf");
-                    await System.IO.File.WriteAllBytesAsync(filePath, ms.ToArray());
-                    
-                    Console.WriteLine($"Downloaded successfully to {filePath}");
-                }
-
-                await Task.Delay(1000);
-            }
-
-            Response.Headers.Add("Location", _frontendAppUrl + "?download=true");
-            return new StatusCodeResult(303);
+            } while (!ready);
+            
+            // Download PAdES when it's ready
+            var stream = await _signatureService.GetFileAsync(documentId, FileFormat.Pades);
+            
+            return File(stream, "application/pdf", "letter_of_intent_PAdES.pdf");
         }
 
         private Guid GetDocumentIdFromJwt(string jwt)

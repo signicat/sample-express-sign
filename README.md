@@ -1,6 +1,6 @@
 # Express Signature Sample for ASP.NET Core
 
-Sample application using the [Express Signature API](https://developer.signicat.com/express/apis/express-api.html#tag/Signature-API-Endpoint).
+Sample application using the [Express Signature API](https://developer.signicat.com/apis/electronic-signing/express/).
 
 Check out the [documentation](https://developer.signicat.com/express/docs/signature/) for more information about the signature service.
 
@@ -8,7 +8,7 @@ Please note that this example only shows a signature flow without any authentica
 
 ## Requirements
 - [Node.js](https://nodejs.org/en/)
-- [.NET 5.0+ SDK](https://dotnet.microsoft.com/download)
+- [.NET 7.0+ SDK](https://dotnet.microsoft.com/download)
 
 ## Running the sample frontend application
 

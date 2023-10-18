@@ -11,8 +11,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using System.Threading.Tasks;
-using Signicat.Express;
-using Signicat.Express.Signature;
+using Signicat;
+using Signicat.Services.Signing.Express;
+using Signicat.Services.Signing.Express.Entities;
 
 namespace Server
 {
@@ -43,10 +44,9 @@ namespace Server
             services.AddMvc().AddNewtonsoftJson();
 
             // Register Signature service with ClientID, ClientSecret and Scopes
-            services.AddSingleton<ISignatureService>(c => new SignatureService(
+            services.AddSingleton<IExpressSignatureService>(c => new ExpressSignatureService(
                 Configuration["Signicat:ClientId"],
-                Configuration["Signicat:ClientSecret"],
-                new List<OAuthScope>() { OAuthScope.DocumentRead, OAuthScope.DocumentWrite, OAuthScope.DocumentFile }
+                Configuration["Signicat:ClientSecret"] 
             ));
         }
 
@@ -67,12 +67,12 @@ namespace Server
     [ApiController]
     public class SignController : Controller
     {
-        private readonly ISignatureService _signatureService;
+        private readonly IExpressSignatureService _signatureService;
         private readonly IWebHostEnvironment _env;
         private readonly string _frontendAppUrl;
 
         public SignController(
-            ISignatureService signatureService,
+            IExpressSignatureService signatureService,
             IConfiguration configuration,
             IWebHostEnvironment env)
         {
@@ -107,14 +107,14 @@ namespace Server
                         },
                         SignatureType = new SignatureType()
                         {
-                            Mechanism = SignatureMechanism.Identification,
-                            SignatureMethods = new List<SignatureMethod>()
-                            {
-                                SignatureMethod.NoBankIdNetcentric,
-                                SignatureMethod.Mitid,
-                                SignatureMethod.DkNemid
-                            }
-
+                            Mechanism = SignatureMechanism.Identification
+                            // If you want to specify which signature methods to use this can be done like this:
+                            // SignatureMethods = new List<SignatureMethod>() 
+                            // {
+                            //     SignatureMethod.NoBankId,
+                            //     SignatureMethod.Mitid,
+                            //     SignatureMethod.SeBankid
+                            // }
                         },
                         ExternalSignerId = Guid.NewGuid().ToString(),
                     }
@@ -167,11 +167,17 @@ namespace Server
             };
 
             // Create document with the settings specified
-            var res = await _signatureService.CreateDocumentAsync(options);
-
-            // Redirect user to the URL retrieved from the SDK
-            Response.Headers.Add("Location", res.Signers[0].Url);
-            return new StatusCodeResult(303);
+            try
+            {
+                var res = await _signatureService.CreateDocumentAsync(options);
+                // Redirect user to the URL retrieved from the SDK
+                Response.Headers.Add("Location", res.Signers[0].Url);
+                return new StatusCodeResult(303);
+            }
+            catch (SignicatException e)
+            {
+                return new OkObjectResult(e);
+            }
         }
         
         [HttpGet("download")]
